@@ -1,0 +1,10 @@
+README.md
+pyproject.toml
+fastafood/__init__.py
+fastafood/generator.py
+fastafood/io.py
+fastafood/sequence.py
+fastafood.egg-info/PKG-INFO
+fastafood.egg-info/SOURCES.txt
+fastafood.egg-info/dependency_links.txt
+fastafood.egg-info/top_level.txt
