@@ -118,21 +118,22 @@ def fast_a_food_splash():
     DNA    = "\033[36m"      # Cyan
     RESET  = "\033[0m"       # Reset to default
     BOLD   = "\033[1m"
+    KETCHUP = "\033[31m"     # Red
 
     ascii_art = f"""
           {BUN}.----------------.{RESET}
-      {BUN}_.-'                  '-._{RESET}
-    {BUN}.'__________________________'.{RESET}   {BUN}(Top Bun){RESET}
-    {LETTUCE}!~~~~~~~~~~~~~~~~~~~~~~~~~~~~!{RESET}   {LETTUCE}(Lettuce){RESET}
+      {BUN}_.-'    {BOLD}{KETCHUP}FASTA FOOD{RESET}{BUN}    '-._{RESET}
+    {BUN}.'__________________________'.{RESET}
+    {LETTUCE}!~~~~~~~~~~~~~~~~~~~~~~~~~~~~!{RESET}
       {DNA}|   _  ..  _  ..  _  ..  |{RESET}
-      {DNA}|  / \/  \/ \/  \/ \/  \ |{RESET}   {DNA}(DNA Patty){RESET}
+      {DNA}|  / \/  \/ \/  \/ \/  \ |{RESET}
       {DNA}|  \ /\  /\ /\  /\ /\  / |{RESET}
       {DNA}|   '  ''  '  ''  '  ''  |{RESET}
-    {BUN}!____________________________!{RESET}   {BUN}(Bottom Bun){RESET}
+    {BUN}!____________________________!{RESET}
     {BUN}'----------------------------'{RESET}
 
-        {BOLD}--- FastAfood v1.0 ---{RESET}
-    {BOLD}"Serving up sequences, fast."{RESET}
+        {BOLD}--- fastafood v0.1.0 ---{RESET}
+         {BOLD}"From PASTA to FASTA."{RESET}
     """
     print(ascii_art)
 
