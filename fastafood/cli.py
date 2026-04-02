@@ -1,9 +1,13 @@
 import argparse
 import sys
 from fastafood import read_fasta, to_fasta, VariantGenerator, DNASequence
+import os
+os.system('') # This "magic" line enables ANSI escape characters in many Windows shells
 
 def main():
     parser = argparse.ArgumentParser(description="Fastafood CLI - Mode Fichier ou Séquence brute")
+    if len(sys.argv) == 1 or "--help" in sys.argv or "-h" in sys.argv:
+        fast_a_food_splash()
     
     # Groupe exclusif : Fichier OU Séquence [cite: 13, 14]
     input_group = parser.add_mutually_exclusive_group(required=True)
@@ -107,5 +111,32 @@ def main():
             print(f">{name}_{manual_index}\n{sequence}") 
             manual_index += 1
 
+def fast_a_food_splash():
+    # ANSI Color Codes
+    BUN    = "\033[38;5;214m" # Orange/Tan
+    LETTUCE = "\033[32m"      # Green
+    DNA    = "\033[36m"      # Cyan
+    RESET  = "\033[0m"       # Reset to default
+    BOLD   = "\033[1m"
+
+    ascii_art = f"""
+          {BUN}.----------------.{RESET}
+      {BUN}_.-'                  '-._{RESET}
+    {BUN}.'__________________________'.{RESET}   {BUN}(Top Bun){RESET}
+    {LETTUCE}!~~~~~~~~~~~~~~~~~~~~~~~~~~~~!{RESET}   {LETTUCE}(Lettuce){RESET}
+      {DNA}|   _  ..  _  ..  _  ..  |{RESET}
+      {DNA}|  / \/  \/ \/  \/ \/  \ |{RESET}   {DNA}(DNA Patty){RESET}
+      {DNA}|  \ /\  /\ /\  /\ /\  / |{RESET}
+      {DNA}|   '  ''  '  ''  '  ''  |{RESET}
+    {BUN}!____________________________!{RESET}   {BUN}(Bottom Bun){RESET}
+    {BUN}'----------------------------'{RESET}
+
+        {BOLD}--- FastAfood v1.0 ---{RESET}
+    {BOLD}"Serving up sequences, fast."{RESET}
+    """
+    print(ascii_art)
+
+
 if __name__ == "__main__":
+
     main()
