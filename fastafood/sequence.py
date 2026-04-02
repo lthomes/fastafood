@@ -89,3 +89,21 @@ class DNASequence:
             protein.append(aa)
 
         return "".join(protein)
+    
+    def scanning_translation(self, stop_at_stop: bool = False):
+        results = []
+        # On boucle sur les offsets 0, 1, 2
+        for offset in range(3):
+            seq = self.sequence[offset:]
+            protein = []
+            
+            # Ton calcul de codons reste identique
+            for i in range(0, len(seq) - 2, 3):
+                codon = seq[i:i+3]
+                aa = self.CODON_TABLE.get(codon, "X")
+                if stop_at_stop and aa == "*":
+                    break
+                protein.append(aa)
+                
+            results.append("".join(protein))
+        return results

@@ -21,6 +21,7 @@ def main():
     transform.add_argument("--revcomp", action="store_true", help="Reverse complement")
     transform.add_argument("--trim", nargs=2, type=int, metavar=('5p', '3p'))
     transform.add_argument("--translate", action="store_true")
+    transform.add_argument("--scan-translate", action="store_true")
 
     mut = parser.add_argument_group("Mutations")
     mut.add_argument("--snps", action="store_true", help="Génère tous les SNPs possibles")
@@ -84,9 +85,18 @@ def main():
         # 4. Traduction finale si demandée
         if args.translate:
             for v in variants:
-                prot_seq = v.translate(stop_at_stop=True)
+                prot_seq = v.translate(stop_at_stop=False)
                 # On crée une pseudo-séquence pour l'export (attention: VALID_BASES bloquerait une DNASequence de AA)
                 final_results.append({"name": f"{v.name}_prot", "sequence": prot_seq})
+        if args.scan_translate:
+            for v in variants:
+                prot_seq = v.scanning_translation(stop_at_stop=False)
+                prot_frame = 1
+                for prot in prot_seq:
+                    final_results.append({"name": f"{v.name}_frame{prot_frame}_scanprot", "sequence": prot})
+                    prot_frame += 1
+
+        
         else:
             final_results.extend(variants)
 
@@ -107,6 +117,8 @@ def main():
         manual_index = 0
         for res in final_results:
             name = res.name if isinstance(res, DNASequence) else res["name"]
+            if name is None:
+                name = "edited_sequence"
             sequence = res.sequence if isinstance(res, DNASequence) else res["sequence"]
             print(f">{name}_{manual_index}\n{sequence}") 
             manual_index += 1
