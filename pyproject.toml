@@ -17,3 +17,5 @@ dependencies = []
 [project.urls]
 "Homepage" = "https://github.com/lthomes/fastafood"
 
+[project.scripts]
+fastafood = "fastafood.cli:main"

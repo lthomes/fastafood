@@ -18,7 +18,7 @@ class VariantGenerator:
                 if alt != base:
                     yield self.dna.mutate(i, alt)
 
-    def generate_deletions(self, sizes=(1,), protected_positions: Set[int] = None):
+    def generate_deletions(self, sizes=(1,), protected_positions: Set[int] = None, step: int = None):
         if protected_positions is None:
             protected_positions = set()
 
@@ -26,7 +26,10 @@ class VariantGenerator:
         n = len(seq)
 
         for size in sizes:
-            for i in range(n - size + 1):
+            # Si step est None, on glisse de 1. Sinon, on utilise la valeur fournie.
+            actual_step = step if step is not None else 1
+            
+            for i in range(0, n - size + 1, actual_step):
                 if any(pos in protected_positions for pos in range(i, i + size)):
                     continue
 

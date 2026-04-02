@@ -1,0 +1,2 @@
+[console_scripts]
+fastafood = fastafood.cli:main

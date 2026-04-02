@@ -1,0 +1,204 @@
+from typing import Iterable
+from .sequence import DNASequence
+
+
+def to_fasta(sequences: Iterable[DNASequence], file_path: str, line_width: int = 60):
+    with open(file_path, "w") as f:
+        for i, seq in enumerate(sequences):
+            header = seq.name if seq.name else f"seq_{i}"
+            f.write(f">{header}\n")
+
+            s = seq.sequence
+            for j in range(0, len(s), line_width):
+                f.write(s[j:j+line_width] + "\n")
+
+def read_fasta(file_path: str):
+    sequences = []
+
+    with open(file_path, "r") as f:
+        name = None
+        seq_chunks = []
+
+        for line in f:
+            line = line.strip()
+
+            if line.startswith(">"):
+                if name is not None:
+                    sequences.append(
+                        DNASequence("".join(seq_chunks), name=name)
+                    )
+                name = line[1:]
+                seq_chunks = []
+            else:
+                seq_chunks.append(line)
+
+        # dernière séquence
+        if name is not None:
+            sequences.append(
+                DNASequence("".join(seq_chunks), name=name)
+            )
+
+    return sequences
+
+def count_fasta(file_path: str) -> int:
+    count = 0
+    with open(file_path) as f:
+        for line in f:
+            if line.startswith(">"):
+                count += 1
+    return count
+
+def list_fasta_headers(file_path: str):
+    headers = []
+    with open(file_path) as f:
+        for line in f:
+            if line.startswith(">"):
+                headers.append(line.strip()[1:])
+    return headers
+from typing import Iterable, Set
+from .sequence import DNASequence
+
+class VariantGenerator:
+
+    def __init__(self, dna: DNASequence):
+        self.dna = dna
+
+    def generate_snps(self, protected_positions: Set[int] = None) -> Iterable[DNASequence]:
+        if protected_positions is None:
+            protected_positions = set()
+
+        for i, base in enumerate(self.dna.sequence):
+            if i in protected_positions:
+                continue
+
+            for alt in DNASequence.VALID_BASES:
+                if alt != base:
+                    yield self.dna.mutate(i, alt)
+
+    def generate_deletions(self, sizes=(1,), protected_positions: Set[int] = None):
+        if protected_positions is None:
+            protected_positions = set()
+
+        seq = self.dna.sequence
+        n = len(seq)
+
+        for size in sizes:
+            for i in range(n - size + 1):
+                if any(pos in protected_positions for pos in range(i, i + size)):
+                    continue
+
+                new_seq = seq[:i] + seq[i + size:]
+                yield DNASequence(new_seq)
+
+    def generate_duplications(self, sizes=(1,), times=2, protected_positions: Set[int] = None):
+        if protected_positions is None:
+            protected_positions = set()
+
+        seq = self.dna.sequence
+        n = len(seq)
+
+        for size in sizes:
+            for i in range(n - size + 1):
+                if any(pos in protected_positions for pos in range(i, i + size)):
+                    continue
+
+                fragment = seq[i:i+size]
+                duplicated = fragment * times
+                new_seq = seq[:i] + duplicated + seq[i+size:]
+                yield DNASequence(new_seq)
+from typing import List
+
+class DNASequence:
+    VALID_BASES = {"A", "T", "C", "G"}
+
+    COMPLEMENT = str.maketrans("ATCG", "TAGC")
+
+    CODON_TABLE = {
+        "ATA":"I","ATC":"I","ATT":"I","ATG":"M",
+        "ACA":"T","ACC":"T","ACG":"T","ACT":"T",
+        "AAC":"N","AAT":"N","AAA":"K","AAG":"K",
+        "AGC":"S","AGT":"S","AGA":"R","AGG":"R",
+
+        "CTA":"L","CTC":"L","CTG":"L","CTT":"L",
+        "CCA":"P","CCC":"P","CCG":"P","CCT":"P",
+        "CAC":"H","CAT":"H","CAA":"Q","CAG":"Q",
+        "CGA":"R","CGC":"R","CGG":"R","CGT":"R",
+
+        "GTA":"V","GTC":"V","GTG":"V","GTT":"V",
+        "GCA":"A","GCC":"A","GCG":"A","GCT":"A",
+        "GAC":"D","GAT":"D","GAA":"E","GAG":"E",
+        "GGA":"G","GGC":"G","GGG":"G","GGT":"G",
+
+        "TCA":"S","TCC":"S","TCG":"S","TCT":"S",
+        "TTC":"F","TTT":"F","TTA":"L","TTG":"L",
+        "TAC":"Y","TAT":"Y","TAA":"*","TAG":"*",
+        "TGC":"C","TGT":"C","TGA":"*","TGG":"W",
+    }
+
+    def __init__(self, sequence: str, name: str = None):
+        self.sequence = sequence.upper()
+        self.name = name
+        self._validate()
+
+    def _validate(self):
+        if not set(self.sequence).issubset(self.VALID_BASES):
+            raise ValueError("Invalid DNA sequence")
+
+    def __len__(self):
+        return len(self.sequence)
+
+    def __repr__(self):
+        return f"DNASequence('{self.sequence}')"
+
+    def __eq__(self, other):
+        return isinstance(other, DNASequence) and self.sequence == other.sequence
+
+    # --- Mutations ---
+    def mutate(self, pos: int, new_base: str):
+        if new_base not in self.VALID_BASES:
+            raise ValueError("Invalid base")
+        seq = list(self.sequence)
+        seq[pos] = new_base
+        return DNASequence("".join(seq), self.name)
+
+    # --- Trimming ---
+    def trim_5prime(self, n: int):
+        return DNASequence(self.sequence[n:], self.name)
+
+    def trim_3prime(self, n: int):
+        return DNASequence(self.sequence[:-n] if n > 0 else self.sequence, self.name)
+
+    def trim(self, n5: int = 0, n3: int = 0):
+        return DNASequence(self.sequence[n5: len(self.sequence) - n3], self.name)
+
+    # --- Reverse complement ---
+    def complement(self):
+        return DNASequence(self.sequence.translate(self.COMPLEMENT), self.name)
+
+    def reverse(self):
+        return DNASequence(self.sequence[::-1], self.name)
+
+    def reverse_complement(self):
+        return DNASequence(self.sequence.translate(self.COMPLEMENT)[::-1], self.name)
+
+    # --- Translation ---
+    def translate(self, frame: int = 0, stop_at_stop: bool = False) -> str:
+        seq = self.sequence[frame:]
+        protein: List[str] = []
+
+        for i in range(0, len(seq) - 2, 3):
+            codon = seq[i:i+3]
+            aa = self.CODON_TABLE.get(codon, "X")
+
+            if stop_at_stop and aa == "*":
+                break
+
+            protein.append(aa)
+
+        return "".join(protein)from .sequence import DNASequence
+from .generator import VariantGenerator
+from .io import *
+
+__all__ = ["DNASequence", "VariantGenerator", "to_fasta", "read_fasta", "count_fasta", "list_fasta_headers"]
+
+
