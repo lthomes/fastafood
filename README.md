@@ -12,34 +12,75 @@
         --- fastafood v0.1.0 ---
          "From PASTA to FASTA."
 
-## Features
+fastafood est une bibliothèque Python et un outil en ligne de commande (CLI) conçu pour manipuler des séquences ADN, générer des variants (SNPs, délétions, duplications) et effectuer des traductions protéiques en masse.
 
-- SNP generation (with protected positions)
-- Deletions (base, codon, etc.)
-- Duplications
-- Reverse complement
-- Translation
-- FASTA export
+# Installation
 
-## Example
+## Installation locale
 
-```python
-from fastafood import DNASequence, VariantGenerator, to_fasta
+```shell
+git clone https://github.com/votre_nom/fastafood.git
+cd fastafood
+pip install .
+```
 
-dna = DNASequence("ATGC")
+# Utilisation (CLI)
 
+Une fois installé, l'outil est disponible via la commande `fastafood`.
+
+1. Entrée des données
+   Vous pouvez fournir un fichier FASTA ou une séquence brute :
+
+- Fichier : fastafood --file genome.fasta
+- Séquence brute : fastafood --seq ATGCATGC
+
+2. Transformations de base
+
+- Reverse Complement : --revcomp
+- Trimming (5' et 3') : --trim 5 10 (enlève 5 bases au début et 10 à la fin)
+
+3. Génération de Variants
+   Générez automatiquement des mutations basées sur votre séquence d'entrée :
+
+- SNPs : --snps (génère tous les SNPs possibles)
+- Délétions : --deletions 1 2 3 (tailles des délétions)
+- Duplications : --duplications 5
+- Protection : --protect 1 2 10 (empêche la mutation des positions 1, 2 et 10)
+
+4. Traduction
+
+- Standard : --translate
+- Scanning (3 cadres) : --scan-translate
+- Gestion du Stop : --stop yes (tronque au premier codon STOP) ou --stop no (défaut)
+
+5. Formatage de sortie
+
+- One-line (défaut) : Chaque séquence sur une seule ligne.
+- Split : Découpage à 60 caractères (format FASTA standard).
+- Usage : fastafood --file in.fa --format split --out out.fa
+
+# Utilisation comme bibliothèque
+
+Vous pouvez importer les classes directement dans vos scripts Python :
+
+```Python
+from fastafood import DNASequence, VariantGenerator
+
+
+## Créer une séquence
+dna = DNASequence("ATGCGTACGTAG", name="ma_sequence")
+
+## Générer des SNPs
 gen = VariantGenerator(dna)
+for variant in gen.generate_snps():
+    print(variant)
 
-variants = list(gen.generate_snps(protected_positions={0}))
+## Traduire
+proteine = dna.translate(stop_at_stop=True)
+```
 
-to_fasta(variants, "variants.fasta")
+# Fonctionnalités techniques
 
-
----
-
-## 🧪 4. Installer en local (mode dev)
-
-Dans le dossier racine :
-
-```bash
-pip install -e .
+- Validation : Vérifie la validité des bases ADN (A, T, C, G).
+- Flexibilité : Supporte les indexations incrémentales automatiques (\_0, \_1, ...) pour éviter les noms de séquences en doublon lors des exports massifs.
+- Visual : Interface colorée pour une meilleure expérience utilisateur.
