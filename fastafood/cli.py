@@ -1,138 +1,136 @@
 import argparse
 import sys
-from fastafood import read_fasta, to_fasta, VariantGenerator, DNASequence
 import os
-os.system('') # This "magic" line enables ANSI escape characters in many Windows shells
+from types import SimpleNamespace
+from fastafood import read_fasta, to_fasta, VariantGenerator, DNASequence
+
+# "Magic" line pour ANSI sur Windows
+os.system('') 
 
 def main():
     parser = argparse.ArgumentParser(description="Fastafood CLI - Mode Fichier ou Séquence brute")
     if len(sys.argv) == 1 or "--help" in sys.argv or "-h" in sys.argv:
         fast_a_food_splash()
+        if len(sys.argv) == 1: return
     
-    # Groupe exclusif : Fichier OU Séquence [cite: 13, 14]
     input_group = parser.add_mutually_exclusive_group(required=True)
     input_group.add_argument("--file", help="Fichier FASTA d'entrée")
     input_group.add_argument("--seq", help="Séquence ADN brute (ex: ATGC...)")
 
     parser.add_argument("--out", help="Fichier de sortie (optionnel)")
     
-    # --- Transformations & Mutations (identique à précédemment) ---
+    # --- Options de Formatage ---
+    fmt_group = parser.add_argument_group("Formatage")
+    fmt_group.add_argument("--format", choices=["one-line", "split"], default="one-line", 
+                           help="Format de la séquence (défaut: one-line)")
+
+    # --- Transformations & Mutations ---
     transform = parser.add_argument_group("Transformations")
     transform.add_argument("--revcomp", action="store_true", help="Reverse complement")
     transform.add_argument("--trim", nargs=2, type=int, metavar=('5p', '3p'))
-    transform.add_argument("--translate", action="store_true")
-    transform.add_argument("--scan-translate", action="store_true")
+    transform.add_argument("--translate", action="store_true", help="Traduit en protéine")
+    transform.add_argument("--scan-translate", action="store_true", help="Scanning translation (6 cadres)")
+    # Nouvel argument pour la gestion du STOP
+    transform.add_argument("--stop", choices=["yes", "no"], default="no",
+                           help="Arrêter la traduction au premier STOP rencontré (défaut: no)")
 
     mut = parser.add_argument_group("Mutations")
-    mut.add_argument("--snps", action="store_true", help="Génère tous les SNPs possibles")
-    mut.add_argument("--deletions", nargs="+", type=int, metavar="SIZE", help="Génère des délétions")
-    mut.add_argument("--step", type=int, help="Pas de glissement pour les délétions/duplications")
-    mut.add_argument("--duplications", nargs="+", type=int, metavar="SIZE", help="Génère des duplications")
-    mut.add_argument("--protect", nargs="+", type=int, help="Positions à protéger (1-indexed)")
+    mut.add_argument("--snps", action="store_true")
+    mut.add_argument("--deletions", nargs="+", type=int, metavar="SIZE")
+    mut.add_argument("--step", type=int)
+    mut.add_argument("--duplications", nargs="+", type=int, metavar="SIZE")
+    mut.add_argument("--protect", nargs="+", type=int)
 
     args = parser.parse_args()
 
-    # 1. Acquisition des séquences
+    # Conversion de l'argument --stop en booléen pour les méthodes
+    stop_flag = True if args.stop == "yes" else False
+
+    # 1. Acquisition
     input_sequences = []
-    
     if args.file:
         try:
-            input_sequences = read_fasta(args.file) # [cite: 2, 5]
+            input_sequences = read_fasta(args.file)
         except Exception as e:
             print(f"Erreur fichier : {e}")
             sys.exit(1)
     elif args.seq:
-        # On crée un objet DNASequence à la volée 
-        try:
-            input_sequences = [DNASequence(args.seq, name="manual_input")]
-
-        except ValueError as e:
-            print(f"Erreur séquence : {e}") # Déclenché par _validate 
-            sys.exit(1)
+        input_sequences = [DNASequence(args.seq, name="manual_input")]
 
     final_results = []
     one_based = lambda pos: pos - 1
     protected = set(one_based(pos) for pos in args.protect) if args.protect else set() 
 
     for seq in input_sequences:
-        # 2. Application des filtres de base
-        
-        
+        # 2. Transformations ADN
         if args.revcomp:
             seq = seq.reverse_complement()
-
         if args.trim:
             seq = seq.trim(n5=args.trim[0], n3=args.trim[1]) 
 
-        # 3. Génération des variants
+        # 3. Variants
         gen = VariantGenerator(seq)
-        variants = [seq] # On garde l'originale transformée
+        variants = [seq]
 
         if args.snps:
             variants.extend(list(gen.generate_snps(protected_positions=protected))) 
-        
         if args.deletions:
-        # On passe le paramètre step récupéré de la ligne de commande
-            variants.extend(list(gen.generate_deletions(
-                sizes=args.deletions, 
-                protected_positions=protected, 
-                step=args.step
-            )))
-            
+            variants.extend(list(gen.generate_deletions(sizes=args.deletions, protected_positions=protected, step=args.step)))
         if args.duplications:
             variants.extend(list(gen.generate_duplications(sizes=args.duplications, protected_positions=protected)))
 
-        # 4. Traduction finale si demandée
+        # 4. Traduction Exclusive
+        def get_safe_name(v):
+            return v.name if v.name else "sequence"
+
         if args.translate:
             for v in variants:
-                prot_seq = v.translate(stop_at_stop=False)
-                # On crée une pseudo-séquence pour l'export (attention: VALID_BASES bloquerait une DNASequence de AA)
-                final_results.append({"name": f"{v.name}_prot", "sequence": prot_seq})
-        if args.scan_translate:
+                prot_seq = v.translate(stop_at_stop=stop_flag)
+                final_results.append({"name": f"{get_safe_name(v)}_prot", "sequence": prot_seq})
+        elif args.scan_translate:
             for v in variants:
-                prot_seq = v.scanning_translation(stop_at_stop=False)
-                prot_frame = 1
-                for prot in prot_seq:
-                    final_results.append({"name": f"{v.name}_frame{prot_frame}_scanprot", "sequence": prot})
-                    prot_frame += 1
-
-        
+                prot_seqs = v.scanning_translation(stop_at_stop=stop_flag)
+                for i, prot in enumerate(prot_seqs, 1):
+                    final_results.append({"name": f"{get_safe_name(v)}_frame{i}_scan", "sequence": prot})
         else:
             final_results.extend(variants)
 
-    # 5. Export ou Affichage
-    if args.out:
-        # On adapte les objets pour to_fasta
-        export_objs = []
-        for item in final_results:
-            if isinstance(item, DNASequence):
-                export_objs.append(item)
-            else:
-                # Pour les protéines traduites qui sont des dicts
-                export_objs.append(DNASequence(item["sequence"], name=item["name"]))
+    # 5. Export / Affichage
+    width = 60 if args.format == "split" else 10**9 
+    
+    export_list = []
+    for index, item in enumerate(final_results):
+        if isinstance(item, DNASequence):
+            raw_name = item.name
+            sequence = item.sequence
+        else:
+            raw_name = item.get("name")
+            sequence = item.get("sequence")
         
-        to_fasta(export_objs, args.out) 
-        print(f"Succès : {len(export_objs)} séquences écrites dans {args.out}")
+        if not raw_name:
+            raw_name = "sequence"
+
+        indexed_name = f"{raw_name.lstrip('>')}_{index}"
+        obj = SimpleNamespace(name=indexed_name, sequence=sequence)
+        export_list.append(obj)
+
+    if args.out:
+        to_fasta(export_list, args.out, line_width=width) 
+        print(f"Succès : {len(export_list)} séquences ({args.format}) écrites dans {args.out}")
     else:
-        manual_index = 0
-        for res in final_results:
-            name = res.name if isinstance(res, DNASequence) else res["name"]
-            if name is None:
-                name = "edited_sequence"
-            sequence = res.sequence if isinstance(res, DNASequence) else res["sequence"]
-            print(f">{name}_{manual_index}\n{sequence}") 
-            manual_index += 1
+        for res in export_list:
+            print(f">{res.name}")
+            s = res.sequence
+            if args.format == "split":
+                for i in range(0, len(s), 60):
+                    print(s[i:i+60])
+            else:
+                print(s)
 
 def fast_a_food_splash():
-    # ANSI Color Codes
-    BUN    = "\033[38;5;214m" # Orange/Tan
-    LETTUCE = "\033[32m"      # Green
-    DNA    = "\033[36m"      # Cyan
-    RESET  = "\033[0m"       # Reset to default
-    BOLD   = "\033[1m"
-    KETCHUP = "\033[31m"     # Red
-
-    ascii_art = f"""
+    BUN, LETTUCE, DNA = "\033[38;5;214m", "\033[32m", "\033[36m"
+    RESET, BOLD, KETCHUP = "\033[0m", "\033[1m", "\033[31m"
+    print(f"""
           {BUN}.----------------.{RESET}
       {BUN}_.-'    {BOLD}{KETCHUP}FASTA FOOD{RESET}{BUN}    '-._{RESET}
     {BUN}.'__________________________'.{RESET}
@@ -143,13 +141,8 @@ def fast_a_food_splash():
       {DNA}|   '  ''  '  ''  '  ''  |{RESET}
     {BUN}!____________________________!{RESET}
     {BUN}'----------------------------'{RESET}
-
         {BOLD}--- fastafood v0.1.0 ---{RESET}
-         {BOLD}"From PASTA to FASTA."{RESET}
-    """
-    print(ascii_art)
-
+    """)
 
 if __name__ == "__main__":
-
     main()
