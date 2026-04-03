@@ -19,7 +19,7 @@ fastafood est une bibliothèque Python et un outil en ligne de commande (CLI) co
 ## Installation locale
 
 ```shell
-git clone https://github.com/votre_nom/fastafood.git
+git clone https://github.com/lthomes/fastafood.git
 cd fastafood
 pip install .
 ```
@@ -28,32 +28,34 @@ pip install .
 
 Une fois installé, l'outil est disponible via la commande `fastafood`.
 
-1. Entrée des données
-   Vous pouvez fournir un fichier FASTA ou une séquence brute :
+## 1. Entrée des données
+
+Vous pouvez fournir un fichier FASTA ou une séquence brute :
 
 - Fichier : fastafood --file genome.fasta
 - Séquence brute : fastafood --seq ATGCATGC
 
-2. Transformations de base
+## 2. Transformations de base
 
 - Reverse Complement : --revcomp
 - Trimming (5' et 3') : --trim 5 10 (enlève 5 bases au début et 10 à la fin)
 
-3. Génération de Variants
-   Générez automatiquement des mutations basées sur votre séquence d'entrée :
+## 3. Génération de Variants
+
+Générez automatiquement des mutations basées sur votre séquence d'entrée :
 
 - SNPs : --snps (génère tous les SNPs possibles)
 - Délétions : --deletions 1 2 3 (tailles des délétions)
 - Duplications : --duplications 5
 - Protection : --protect 1 2 10 (empêche la mutation des positions 1, 2 et 10)
 
-4. Traduction
+## 4. Traduction
 
 - Standard : --translate
 - Scanning (3 cadres) : --scan-translate
 - Gestion du Stop : --stop yes (tronque au premier codon STOP) ou --stop no (défaut)
 
-5. Formatage de sortie
+## 5. Formatage de sortie
 
 - One-line (défaut) : Chaque séquence sur une seule ligne.
 - Split : Découpage à 60 caractères (format FASTA standard).
