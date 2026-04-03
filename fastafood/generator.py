@@ -52,3 +52,25 @@ class VariantGenerator:
                 duplicated = fragment * times
                 new_seq = seq[:i] + duplicated + seq[i+size:]
                 yield DNASequence(new_seq)
+
+    def generate_inversions(self, sizes=(2,), step: int = None, protected_positions: Set[int] = None):
+        if protected_positions is None:
+            protected_positions = set()
+
+        seq = self.dna.sequence
+        n = len(seq)
+
+        for size in sizes:
+            actual_step = step if step is not None else 1
+            
+            for i in range(0, n - size + 1, actual_step):
+                # On vérifie si une partie de la région à inverser est protégée
+                if any(pos in protected_positions for pos in range(i, i + size)):
+                    continue
+
+                # On extrait, on inverse, et on réinsère
+                fragment = seq[i:i+size]
+                inverted_fragment = fragment[::-1]
+                new_seq = seq[:i] + inverted_fragment + seq[i+size:] 
+                
+                yield DNASequence(new_seq, name=f"{self.dna.name}_inv_{i}_{size}")

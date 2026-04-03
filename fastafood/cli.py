@@ -40,6 +40,8 @@ def main():
     mut.add_argument("--step", type=int)
     mut.add_argument("--duplications", nargs="+", type=int, metavar="SIZE")
     mut.add_argument("--protect", nargs="+", type=int)
+    mut.add_argument("--inversions", nargs="*", type=int, metavar="SIZE", 
+                     help="Génère des inversions. Si aucune taille n'est fournie, utilise 2.")
 
     args = parser.parse_args()
 
@@ -78,6 +80,10 @@ def main():
             variants.extend(list(gen.generate_deletions(sizes=args.deletions, protected_positions=protected, step=args.step)))
         if args.duplications:
             variants.extend(list(gen.generate_duplications(sizes=args.duplications, protected_positions=protected)))
+        if args.inversions is not None:
+            # Si l'utilisateur a mis juste --inversions, on prend [2] par défaut
+            inv_sizes = args.inversions if len(args.inversions) > 0 else [2]
+            variants.extend(list(gen.generate_inversions(sizes=inv_sizes, protected_positions=protected, step=args.step)))
 
         # 4. Traduction Exclusive
         def get_safe_name(v):
