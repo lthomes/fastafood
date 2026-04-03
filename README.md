@@ -45,9 +45,10 @@ Vous pouvez fournir un fichier FASTA ou une séquence brute :
 Générez automatiquement des mutations basées sur votre séquence d'entrée :
 
 - SNPs : --snps (génère tous les SNPs possibles)
-- Délétions : --deletions 1 2 3 (tailles des délétions)
-- Duplications : --duplications 5
+- Délétions : --deletions 2 (tailles des délétions)
+- Duplications : --duplications 3
 - Protection : --protect 1 2 10 (empêche la mutation des positions 1, 2 et 10)
+- Pas de délétion : --step 3 (taille du décalage de la fenêtre)
 
 ## 4. Traduction
 
@@ -85,4 +86,3 @@ proteine = dna.translate(stop_at_stop=True)
 
 - Validation : Vérifie la validité des bases ADN (A, T, C, G).
 - Flexibilité : Supporte les indexations incrémentales automatiques (\_0, \_1, ...) pour éviter les noms de séquences en doublon lors des exports massifs.
-- Visual : Interface colorée pour une meilleure expérience utilisateur.
