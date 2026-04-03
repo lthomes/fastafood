@@ -53,6 +53,13 @@ class DNASequence:
         seq = list(self.sequence)
         seq[pos] = new_base
         return DNASequence("".join(seq), self.name)
+    
+    # --- Sequence insertion ---
+    def insert(self, pos: int, insert_seq: str):
+        # On s'assure que la séquence insérée est valide
+        temp_seq = DNASequence(insert_seq) 
+        new_full_seq = self.sequence[:pos] + temp_seq.sequence + self.sequence[pos:]
+        return DNASequence(new_full_seq, self.name)
 
     # --- Trimming ---
     def trim_5prime(self, n: int):

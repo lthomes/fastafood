@@ -53,6 +53,30 @@ class VariantGenerator:
                 new_seq = seq[:i] + duplicated + seq[i+size:]
                 yield DNASequence(new_seq)
 
+    def generate_insertion(self, pos: int, insert_seq: str) -> DNASequence:
+        # On vérifie si la position est dans la séquence
+        if pos < 0 or pos > len(self.dna.sequence):
+            raise IndexError("Position d'insertion hors limites")
+            
+        return self.dna.insert(pos, insert_seq)
+
+    def generate_multiple_insertions(self, insertions: list) -> DNASequence:
+        """
+        insertions: liste de tuples (pos, seq_to_ins)
+        """
+        # On trie par position décroissante pour ne pas décaler les index
+        # pendant qu'on reconstruit la chaîne.
+        sorted_insertions = sorted(insertions, key=lambda x: x[0], reverse=True)
+        
+        current_seq_str = self.dna.sequence
+        for pos, seq_to_ins in sorted_insertions:
+            # Validation de la séquence à insérer
+            DNASequence(seq_to_ins) 
+            # Insertion directe par slicing
+            current_seq_str = current_seq_str[:pos] + seq_to_ins.upper() + current_seq_str[pos:]
+            
+        return DNASequence(current_seq_str, name=f"{self.dna.name}_multi_ins")
+
     def generate_inversions(self, sizes=(2,), step: int = None, protected_positions: Set[int] = None):
         if protected_positions is None:
             protected_positions = set()

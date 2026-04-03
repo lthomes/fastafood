@@ -42,6 +42,11 @@ def main():
     mut.add_argument("--protect", nargs="+", type=int)
     mut.add_argument("--inversions", nargs="*", type=int, metavar="SIZE", 
                      help="Génère des inversions. Si aucune taille n'est fournie, utilise 2.")
+    # Dans le groupe "Mutations"
+    mut.add_argument("--insertion", nargs="+", type=int, metavar="POS", 
+                     help="Position(s) d'insertion (1-based)")
+    mut.add_argument("--ins-seq", nargs="+", type=str, metavar="SEQ", 
+                     help="Séquence(s) ADN à insérer")
 
     args = parser.parse_args()
 
@@ -84,6 +89,36 @@ def main():
             # Si l'utilisateur a mis juste --inversions, on prend [2] par défaut
             inv_sizes = args.inversions if len(args.inversions) > 0 else [2]
             variants.extend(list(gen.generate_inversions(sizes=inv_sizes, protected_positions=protected, step=args.step)))
+        # 3. Variants - Gestion des insertions multiples
+        # 3. Variants - Gestion des insertions simultanées
+        if args.insertion is not None:
+            if not args.ins_seq:
+                print("Erreur : --insertion nécessite --ins-seq")
+                sys.exit(1)
+
+            positions = args.insertion
+            sequences = args.ins_seq
+            insert_map = []
+
+            # Cas 1 : Une seule séquence pour plusieurs positions
+            if len(sequences) == 1:
+                insert_map = [(pos - 1, sequences[0]) for pos in positions]
+            
+            # Cas 2 : Autant de séquences que de positions
+            elif len(sequences) == len(positions):
+                insert_map = [(p - 1, s) for p, s in zip(positions, sequences)]
+            
+            # Cas 3 : Déséquilibre
+            else:
+                print(f"Erreur : Déséquilibre ({len(positions)} pos vs {len(sequences)} seq)")
+                sys.exit(1)
+
+            try:
+                # On génère UN SEUL variant avec toutes les modifs
+                new_variant = gen.generate_multiple_insertions(insert_map)
+                variants.append(new_variant)
+            except Exception as e:
+                print(f"Erreur lors des insertions multiples : {e}")
 
         # 4. Traduction Exclusive
         def get_safe_name(v):
