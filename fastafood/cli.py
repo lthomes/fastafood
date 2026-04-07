@@ -73,8 +73,7 @@ def main():
         input_sequences = [DNASequence(args.seq, name="manual_input")]
 
     final_results = []
-    one_based = lambda pos: pos - 1
-    protected = set(one_based(pos) for pos in args.protect) if args.protect else set() 
+    else set() 
 
     for seq in input_sequences:
 
@@ -181,11 +180,10 @@ def main():
                     end = int(args.snps_target[1])
                     seq_replacement = args.snps_target[2]
 
-                    if pos in protected:
-                        print(f"Erreur : la position {pos + 1} est protégée et ne peut pas être modifiée.")
+                    if start in protected:
+                        print(f"Erreur : la position {start + 1} est protégée et ne peut pas être modifiée.")
                     else:
                         variants.append(gen.generate_targeted_snp(start, end, seq_replacement))
-                    
                 else:
                     print("Erreur : --snps-target attend 2 ou 3 arguments.")
             except Exception as e:
@@ -196,8 +194,8 @@ def main():
             try:
                 start = args.deletions_target[0] - 1
                 end = args.deletions_target[1]
-                if pos in protected:
-                    print(f"Erreur : la position {pos + 1} est protégée et ne peut pas être modifiée.")
+                if start in protected:
+                    print(f"Erreur : la position {start + 1} est protégée et ne peut pas être modifiée.")
                 else:
                     variants.append(gen.generate_targeted_deletion(start, end))
             except Exception as e:
@@ -207,31 +205,31 @@ def main():
         if args.duplications_target:
             try:
                 is_reversed = (args.reversed == "yes")
-                repeat_count = args.times 
-                
+                repeat_count = args.times
+
                 start = args.duplications_target[0] - 1
-                end = args.duplications_target[1] 
-                
+                end = args.duplications_target[1]
+
                 target_pos = None
                 if len(args.duplications_target) == 3:
                     target_pos = args.duplications_target[2] - 1
-                    
+
                 new_variant = gen.generate_targeted_duplication(
-                    start=start, 
-                    end=end, 
-                    target=target_pos, 
+                    start=start,
+                    end=end,
+                    target=target_pos,
                     reversed_frag=is_reversed,
                     times=repeat_count
                 )
-                
+
                 # Nommage dynamique
                 tag = "rev_dup" if is_reversed else "dup"
                 new_variant.name = f"{seq.name}_{tag}_x{repeat_count}"
-                if pos in protected:
-                    print(f"Erreur : la position {pos + 1} est protégée et ne peut pas être modifiée.")
+                if start in protected:
+                    print(f"Erreur : la position {start + 1} est protégée et ne peut pas être modifiée.")
                 else:
                     variants.append(new_variant)
-                
+
             except Exception as e:
                 print(f"Erreur --duplications-target : {e}")
 
@@ -297,7 +295,7 @@ def fast_a_food_splash():
       {DNA}|   '  ''  '  ''  '  ''  |{RESET}
     {BUN}!____________________________!{RESET}
     {BUN}'----------------------------'{RESET}
-        {BOLD}--- fastafood v0.2.0 ---{RESET}
+        {BOLD}--- fastafood v0.2.1 ---{RESET}
     """)
 
 if __name__ == "__main__":

@@ -8,7 +8,7 @@
       |   '  ''  '  ''  '  ''  |
     !____________________________!
     '----------------------------'
-      --- fastafood v0.2.0 ---
+      --- fastafood v0.2.1 ---
        "From PASTA to FASTA."
 
 **fastafood** est un couteau suisse bio-informatique en Python. Il permet de manipuler des séquences ADN, de simuler des mutations complexes et de générer des bibliothèques de variants avec une précision chirurgicale.
