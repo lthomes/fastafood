@@ -4,7 +4,6 @@ import os
 from types import SimpleNamespace
 from fastafood import read_fasta, to_fasta, VariantGenerator, DNASequence
 
-# "Magic" line pour ANSI sur Windows
 os.system('') 
 
 def main():
@@ -30,7 +29,6 @@ def main():
     transform.add_argument("--trim", nargs=2, type=int, metavar=('5p', '3p'))
     transform.add_argument("--translate", action="store_true", help="Traduit en protéine")
     transform.add_argument("--scan-translate", action="store_true", help="Scanning translation (6 cadres)")
-    # Nouvel argument pour la gestion du STOP
     transform.add_argument("--stop", choices=["yes", "no"], default="no",
                            help="Arrêter la traduction au premier STOP rencontré (défaut: no)")
 
@@ -42,7 +40,6 @@ def main():
     mut.add_argument("--protect", nargs="+", type=int)
     mut.add_argument("--inversions", nargs="*", type=int, metavar="SIZE", 
                      help="Génère des inversions. Si aucune taille n'est fournie, utilise 2.")
-    # Dans le groupe "Mutations"
     mut.add_argument("--insertion", nargs="+", type=int, metavar="POS", 
                      help="Position(s) d'insertion (1-based)")
     mut.add_argument("--ins-seq", nargs="+", type=str, metavar="SEQ", 
@@ -133,7 +130,7 @@ def main():
             # Si l'utilisateur a mis juste --inversions, on prend [2] par défaut
             inv_sizes = args.inversions if len(args.inversions) > 0 else [2]
             variants.extend(list(gen.generate_inversions(sizes=inv_sizes, protected_positions=protected, step=args.step)))
-        # 3. Variants - Gestion des insertions multiples
+
         # 3. Variants - Gestion des insertions simultanées
         if args.insertion is not None:
             if not args.ins_seq:
@@ -164,7 +161,7 @@ def main():
             except Exception as e:
                 print(f"Erreur lors des insertions multiples : {e}")
 
-        # --- Nouveau : Gestion des cibles spécifiques ---
+        # --- Gestion des cibles spécifiques ---
 
         # SNP ou Remplacement de zone
         if args.snps_target:
@@ -206,11 +203,11 @@ def main():
             except Exception as e:
                 print(f"Erreur --deletions-target : {e}")
 
-        # --- Nouveau : Duplication ciblée avec option Reverse ---
+        # --- Duplication ciblée avec option Reverse ---
         if args.duplications_target:
             try:
                 is_reversed = (args.reversed == "yes")
-                repeat_count = args.times # Nouveau paramètre
+                repeat_count = args.times 
                 
                 start = args.duplications_target[0] - 1
                 end = args.duplications_target[1] 
@@ -224,10 +221,10 @@ def main():
                     end=end, 
                     target=target_pos, 
                     reversed_frag=is_reversed,
-                    times=repeat_count # Passage au générateur
+                    times=repeat_count
                 )
                 
-                # Nommage dynamique pour s'y retrouver
+                # Nommage dynamique
                 tag = "rev_dup" if is_reversed else "dup"
                 new_variant.name = f"{seq.name}_{tag}_x{repeat_count}"
                 if pos in protected:

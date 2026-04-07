@@ -104,7 +104,6 @@ class DNASequence:
             seq = self.sequence[offset:]
             protein = []
             
-            # Ton calcul de codons reste identique
             for i in range(0, len(seq) - 2, 3):
                 codon = seq[i:i+3]
                 aa = self.CODON_TABLE.get(codon, "X")
@@ -115,7 +114,6 @@ class DNASequence:
             results.append("".join(protein))
         return results
     
-    # Dans DNASequence (sequence.py)
     def replace_range(self, start: int, end: int, replacement: str = ""):
         """
         Remplace les bases de l'index 'start' à 'end' (exclu) par 'replacement'.

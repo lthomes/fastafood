@@ -99,15 +99,12 @@ class VariantGenerator:
                 
                 yield DNASequence(new_seq, name=f"{self.dna.name}_inv_{i}_{size}")
 
-        # Dans VariantGenerator (generator.py)
     def generate_targeted_snp(self, start: int, end: int, replacement: str) -> DNASequence:
         return self.dna.replace_range(start, end, replacement)
 
     def generate_targeted_deletion(self, start: int, end: int) -> DNASequence:
         return self.dna.replace_range(start, end, "")
 
-    # Dans VariantGenerator (generator.py)
-    # Dans VariantGenerator (generator.py)
     def generate_targeted_duplication(self, start: int, end: int, target: int = None, reversed_frag: bool = False, times: int = 1) -> DNASequence:
         """
         start, end, target sont des index 0-based.
@@ -126,7 +123,7 @@ class VariantGenerator:
         # Détermination du point d'insertion
         ins_pos = target if target is not None else end
         
-        # Utilisation de la méthode insert existante [cite: 45]
+        # Utilisation de la méthode insert existante 
         return self.dna.insert(ins_pos, duplicated_fragment)
 
     

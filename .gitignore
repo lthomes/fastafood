@@ -1,0 +1,26 @@
+# --- Données Bio-info ---
+# Ignore tous les fichiers .fasta et .fa
+*.fasta
+*.fa
+*.fastq
+*.fna
+
+# Ignore aussi les fichiers de sortie potentiels
+*.out
+*.results
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+dist/
+build/
+*.egg-info/
+venv/
+.venv/
+*.ipynb
+*.png
+
+# --- Système ---
+.DS_Store
+Thumbs.db
