@@ -73,7 +73,7 @@ def main():
         input_sequences = [DNASequence(args.seq, name="manual_input")]
 
     final_results = []
-    else set() 
+
 
     for seq in input_sequences:
 
