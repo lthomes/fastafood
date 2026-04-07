@@ -53,6 +53,11 @@ def main():
                  help="Cible : 'START END' ou 'START END TARGET' (1-based)")
     mut.add_argument("--reversed", choices=["yes", "no"], default="no",
                     help="Inverse la séquence dupliquée avant insertion (défaut: no)")
+    mut.add_argument("--times", type=int, default=1, help="Nombre de répétitions pour la duplication (défaut: 1)")
+    mut.add_argument("--protect-range", nargs="+", type=int, 
+                 help="Liste de START STOP à protéger (ex: 3 5 12 13)")
+    mut.add_argument("--protect-extremity", nargs="+", type=int, 
+                    help="Protège de 1 à POS, ou 1 à POS1 ET POS2 à FIN")
 
     args = parser.parse_args()
 
@@ -75,6 +80,39 @@ def main():
     protected = set(one_based(pos) for pos in args.protect) if args.protect else set() 
 
     for seq in input_sequences:
+
+        # On initialise le set de protection pour CETTE séquence
+        protected = set()
+
+        # 1. Protection ponctuelle existante (--protect)
+        if args.protect:
+            protected.update(p - 1 for p in args.protect)
+
+        # 2. Protection par plages (--protect-range)
+        if args.protect_range:
+            # On itère par bonds de 2 pour attraper les couples (start, stop)
+            for i in range(0, len(args.protect_range), 2):
+                try:
+                    start = args.protect_range[i]
+                    stop = args.protect_range[i+1]
+                    # On ajoute toutes les positions entre start et stop inclus (1-based)
+                    protected.update(range(start - 1, stop))
+                except IndexError:
+                    print(f"Attention : argument impair pour --protect-range, la dernière valeur a été ignorée.")
+
+        # 3. Protection des extrémités (--protect-extremity)
+        if args.protect_extremity:
+            if len(args.protect_extremity) == 1:
+                # Protège du début jusqu'à POS
+                pos = args.protect_extremity[0]
+                protected.update(range(0, pos))
+            elif len(args.protect_extremity) >= 2:
+                # Protège du début à POS1 ET de POS2 à la fin
+                pos1 = args.protect_extremity[0]
+                pos2 = args.protect_extremity[1]
+                protected.update(range(0, pos1))
+                protected.update(range(pos2 - 1, len(seq)))
+
         # 2. Transformations ADN
         if args.revcomp:
             seq = seq.reverse_complement()
@@ -135,13 +173,22 @@ def main():
                     # Format: POS BASE (ex: 6 T)
                     pos = int(args.snps_target[0]) - 1
                     base = args.snps_target[1]
-                    variants.append(gen.generate_targeted_snp(pos, pos + 1, base))
+
+                    if pos in protected:
+                        print(f"Erreur : la position {pos + 1} est protégée et ne peut pas être modifiée.")
+                    else:
+                        variants.append(gen.generate_targeted_snp(pos, pos + 1, base))
                 elif len(args.snps_target) == 3:
                     # Format: START END SEQ (ex: 6 10 TTATT)
                     start = int(args.snps_target[0]) - 1
                     end = int(args.snps_target[1])
                     seq_replacement = args.snps_target[2]
-                    variants.append(gen.generate_targeted_snp(start, end, seq_replacement))
+
+                    if pos in protected:
+                        print(f"Erreur : la position {pos + 1} est protégée et ne peut pas être modifiée.")
+                    else:
+                        variants.append(gen.generate_targeted_snp(start, end, seq_replacement))
+                    
                 else:
                     print("Erreur : --snps-target attend 2 ou 3 arguments.")
             except Exception as e:
@@ -152,37 +199,41 @@ def main():
             try:
                 start = args.deletions_target[0] - 1
                 end = args.deletions_target[1]
-                variants.append(gen.generate_targeted_deletion(start, end))
+                if pos in protected:
+                    print(f"Erreur : la position {pos + 1} est protégée et ne peut pas être modifiée.")
+                else:
+                    variants.append(gen.generate_targeted_deletion(start, end))
             except Exception as e:
                 print(f"Erreur --deletions-target : {e}")
 
         # --- Nouveau : Duplication ciblée avec option Reverse ---
         if args.duplications_target:
             try:
-                # Conversion du flag reversed en booléen
                 is_reversed = (args.reversed == "yes")
+                repeat_count = args.times # Nouveau paramètre
                 
-                # Récupération des index (conversion 1-based vers 0-based)
                 start = args.duplications_target[0] - 1
-                end = args.duplications_target[1] # Fin de slice (exclue)
+                end = args.duplications_target[1] 
                 
                 target_pos = None
                 if len(args.duplications_target) == 3:
                     target_pos = args.duplications_target[2] - 1
                     
-                # Génération du variant [cite: 25]
                 new_variant = gen.generate_targeted_duplication(
                     start=start, 
                     end=end, 
                     target=target_pos, 
-                    reversed_frag=is_reversed
+                    reversed_frag=is_reversed,
+                    times=repeat_count # Passage au générateur
                 )
                 
-                # Ajout du suffixe au nom pour la clarté
-                suffix = "_rev_dup" if is_reversed else "_dup"
-                new_variant.name = f"{seq.name}{suffix}"
-                
-                variants.append(new_variant)
+                # Nommage dynamique pour s'y retrouver
+                tag = "rev_dup" if is_reversed else "dup"
+                new_variant.name = f"{seq.name}_{tag}_x{repeat_count}"
+                if pos in protected:
+                    print(f"Erreur : la position {pos + 1} est protégée et ne peut pas être modifiée.")
+                else:
+                    variants.append(new_variant)
                 
             except Exception as e:
                 print(f"Erreur --duplications-target : {e}")

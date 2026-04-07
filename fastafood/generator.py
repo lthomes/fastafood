@@ -107,20 +107,26 @@ class VariantGenerator:
         return self.dna.replace_range(start, end, "")
 
     # Dans VariantGenerator (generator.py)
-    def generate_targeted_duplication(self, start: int, end: int, target: int = None, reversed_frag: bool = False) -> DNASequence:
+    # Dans VariantGenerator (generator.py)
+    def generate_targeted_duplication(self, start: int, end: int, target: int = None, reversed_frag: bool = False, times: int = 1) -> DNASequence:
         """
         start, end, target sont des index 0-based.
-        Si target est None, la duplication est insérée juste après 'end'.
+        times : nombre de fois que le fragment est répété à l'insertion.
         """
-        # Extraction du fragment [cite: 11, 17]
+        # Extraction du fragment original
         fragment_str = self.dna.sequence[start:end]
         
-        # Inversion si demandée 
+        # Inversion si demandée
         if reversed_frag:
             fragment_str = fragment_str[::-1]
+        
+        # Multiplication du fragment 
+        duplicated_fragment = fragment_str * times
         
         # Détermination du point d'insertion
         ins_pos = target if target is not None else end
         
-        # Insertion et retour d'une nouvelle DNASequence 
-        return self.dna.insert(ins_pos, fragment_str)
+        # Utilisation de la méthode insert existante [cite: 45]
+        return self.dna.insert(ins_pos, duplicated_fragment)
+
+    
