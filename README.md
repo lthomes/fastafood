@@ -8,81 +8,120 @@
       |   '  ''  '  ''  '  ''  |
     !____________________________!
     '----------------------------'
+      --- fastafood v0.2.0 ---
+       "From PASTA to FASTA."
 
-        --- fastafood v0.1.0 ---
-         "From PASTA to FASTA."
+**fastafood** est un couteau suisse bio-informatique en Python. Il permet de manipuler des séquences ADN, de simuler des mutations complexes et de générer des bibliothèques de variants avec une précision chirurgicale.
 
-fastafood est une bibliothèque Python et un outil en ligne de commande (CLI) conçu pour manipuler des séquences ADN, générer des variants (SNPs, délétions, duplications) et effectuer des traductions protéiques en masse.
-
-# Installation
-
-## Installation locale
+## Installation
 
 ```shell
-git clone https://github.com/lthomes/fastafood.git
+git clone [https://github.com/lthomes/fastafood.git](https://github.com/lthomes/fastafood.git)
 cd fastafood
 pip install .
 ```
 
-# Utilisation (CLI)
+## Utilisation (CLI)
 
-Une fois installé, l'outil est disponible via la commande `fastafood`.
+### 1. Entrée des données
 
-## 1. Entrée des données
+L'outil accepte des fichiers FASTA ou des chaînes de caractères brutes :
 
-Vous pouvez fournir un fichier FASTA ou une séquence brute :
+Fichier : `fastafood --file genome.fasta`
 
-- Fichier : fastafood --file genome.fasta
-- Séquence brute : fastafood --seq ATGCATGC
+Séquence brute : `fastafood --seq ATGCATGC`
 
-## 2. Transformations de base
+### 2. Transformations de base
 
-- Reverse Complement : --revcomp
-- Trimming (5' et 3') : --trim 5 10 (enlève 5 bases au début et 10 à la fin)
+Reverse Complement : `--revcomp`
 
-## 3. Génération de Variants
+Trimming : `--trim 5 10` (supprime 5 bases en 5' et 10 bases en 3')
 
-Générez automatiquement des mutations basées sur votre séquence d'entrée :
+Traduction Protéique : `--translate` ou `--scan-translate` (6 cadres).
 
-- SNPs : --snps (génère tous les SNPs possibles)
-- Délétions : --deletions 2 (tailles des délétions)
-- Duplications : --duplications 3
-- Protection : --protect 1 2 10 (empêche la mutation des positions 1, 2 et 10)
-- Pas de délétion : --step 3 (taille du décalage de la fenêtre)
+Gestion du Stop : `--stop yes` (tronque au premier \*).
 
-## 4. Traduction
+## Génération de Variants
 
-- Standard : --translate
-- Scanning (3 cadres) : --scan-translate
-- Gestion du Stop : --stop yes (tronque au premier codon STOP) ou --stop no (défaut)
+### A. Mutations Automatisées (Massives)
 
-## 5. Formatage de sortie
+Générez tous les variants possibles pour une taille donnée :
 
-- One-line (défaut) : Chaque séquence sur une seule ligne.
-- Split : Découpage à 60 caractères (format FASTA standard).
-- Usage : fastafood --file in.fa --format split --out out.fa
+SNPs : `--snps`
 
-# Utilisation comme bibliothèque
+Délétions : `--deletions 2 3` (génère toutes les délétions de taille 2 et 3)
 
-Vous pouvez importer les classes directement dans vos scripts Python :
+Duplications : `--duplications 5`
+
+Inversions : `--inversions 10`
+
+Options : `--step 3` (définit le saut de la fenêtre glissante).
+
+### B. Mutations Ciblées (Précision)
+
+Effectuez des modifications spécifiques à des positions précises :
+
+SNP ciblé : `--snps-target 6 T` (remplace la base 6 par T)
+
+Remplacement de zone : `--snps-target 6 10 TTATT` (remplace du nucléotide 6 à 10 par TTATT)
+
+Délétion ciblée : `--deletions-target 2 5` (supprime les bases 2 à 5)
+
+Insertion : `--insertion 4 --ins-seq ATGC` (insère ATGC à la position 4)
+
+### C. Duplications et Réarrangements
+
+Duplication simple : `--duplications-target 2 5` (duplique la zone 2-5 juste après elle-même)
+
+Duplication distante : `--duplications-target 2 5 12` (duplique 2-5 et l'insère à la position 12)
+
+Options avancées : - `--reversed yes` : inverse le fragment avant insertion.
+
+- `--times 3` : insère le fragment en 3 exemplaires.
+
+## Système de Protection
+
+Rendez certaines zones "intouchables" pour les générateurs de mutations :
+
+Ponctuel : `--protect 4 8 15` (protège les bases spécifiées)
+
+Plages : `--protect-range 10 20 50 60` (protège de 10 à 20 et de 50 à 60)
+
+Extrémités : - `--protect-extremity 15` (protège les 15 premières bases)
+
+- `--protect-extremity 10 80` (protège les 10 premières bases ET de la base 80 jusqu'à la fin)
+
+## Export & Formatage
+
+Sortie fichier : `--out results.fasta`
+
+Formatage : `--format split` (découpage à 60 car.) ou one-line (par défaut).
+
+## Utilisation comme Bibliothèque
+
+Intégrez la logique de fastafood dans vos propres scripts :
 
 ```Python
 from fastafood import DNASequence, VariantGenerator
 
+# Initialisation
+dna = DNASequence("ATGCGTACGTAG", name="wild_type")
 
-## Créer une séquence
-dna = DNASequence("ATGCGTACGTAG", name="ma_sequence")
+# Protection des 3 premiers nucléotides
+protected = {0, 1, 2}
 
-## Générer des SNPs
+# Génération ciblée
 gen = VariantGenerator(dna)
-for variant in gen.generate_snps():
-    print(variant)
+variant = gen.generate_targeted_duplication(start=0, end=4, target=10, times=2)
 
-## Traduire
-proteine = dna.translate(stop_at_stop=True)
+print(f"Original : {dna.sequence}")
+print(f"Variant  : {variant.sequence}")
 ```
 
-# Fonctionnalités techniques
+## Points clés
 
-- Validation : Vérifie la validité des bases ADN (A, T, C, G).
-- Flexibilité : Supporte les indexations incrémentales automatiques (\_0, \_1, ...) pour éviter les noms de séquences en doublon lors des exports massifs.
+**1-based Indexing** : Les positions en CLI correspondent aux standards bio-informatiques (la première base est la n°1).
+
+**Validation stricte** : Refuse les caractères non-ADN lors des insertions/remplacements.
+
+**Auto-naming** : Génère des noms explicites pour les variants (seq_dup_x3, seq_rev_comp, etc.).
