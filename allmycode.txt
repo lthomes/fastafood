@@ -108,7 +108,53 @@ class VariantGenerator:
                 fragment = seq[i:i+size]
                 duplicated = fragment * times
                 new_seq = seq[:i] + duplicated + seq[i+size:]
-                yield DNASequence(new_seq)import argparse
+                yield DNASequence(new_seq)
+
+    def generate_insertion(self, pos: int, insert_seq: str) -> DNASequence:
+        # On vérifie si la position est dans la séquence
+        if pos < 0 or pos > len(self.dna.sequence):
+            raise IndexError("Position d'insertion hors limites")
+            
+        return self.dna.insert(pos, insert_seq)
+
+    def generate_multiple_insertions(self, insertions: list) -> DNASequence:
+        """
+        insertions: liste de tuples (pos, seq_to_ins)
+        """
+        # On trie par position décroissante pour ne pas décaler les index
+        # pendant qu'on reconstruit la chaîne.
+        sorted_insertions = sorted(insertions, key=lambda x: x[0], reverse=True)
+        
+        current_seq_str = self.dna.sequence
+        for pos, seq_to_ins in sorted_insertions:
+            # Validation de la séquence à insérer
+            DNASequence(seq_to_ins) 
+            # Insertion directe par slicing
+            current_seq_str = current_seq_str[:pos] + seq_to_ins.upper() + current_seq_str[pos:]
+            
+        return DNASequence(current_seq_str, name=f"{self.dna.name}_multi_ins")
+
+    def generate_inversions(self, sizes=(2,), step: int = None, protected_positions: Set[int] = None):
+        if protected_positions is None:
+            protected_positions = set()
+
+        seq = self.dna.sequence
+        n = len(seq)
+
+        for size in sizes:
+            actual_step = step if step is not None else 1
+            
+            for i in range(0, n - size + 1, actual_step):
+                # On vérifie si une partie de la région à inverser est protégée
+                if any(pos in protected_positions for pos in range(i, i + size)):
+                    continue
+
+                # On extrait, on inverse, et on réinsère
+                fragment = seq[i:i+size]
+                inverted_fragment = fragment[::-1]
+                new_seq = seq[:i] + inverted_fragment + seq[i+size:] 
+                
+                yield DNASequence(new_seq, name=f"{self.dna.name}_inv_{i}_{size}")import argparse
 import sys
 import os
 from types import SimpleNamespace
@@ -150,6 +196,13 @@ def main():
     mut.add_argument("--step", type=int)
     mut.add_argument("--duplications", nargs="+", type=int, metavar="SIZE")
     mut.add_argument("--protect", nargs="+", type=int)
+    mut.add_argument("--inversions", nargs="*", type=int, metavar="SIZE", 
+                     help="Génère des inversions. Si aucune taille n'est fournie, utilise 2.")
+    # Dans le groupe "Mutations"
+    mut.add_argument("--insertion", nargs="+", type=int, metavar="POS", 
+                     help="Position(s) d'insertion (1-based)")
+    mut.add_argument("--ins-seq", nargs="+", type=str, metavar="SEQ", 
+                     help="Séquence(s) ADN à insérer")
 
     args = parser.parse_args()
 
@@ -188,6 +241,40 @@ def main():
             variants.extend(list(gen.generate_deletions(sizes=args.deletions, protected_positions=protected, step=args.step)))
         if args.duplications:
             variants.extend(list(gen.generate_duplications(sizes=args.duplications, protected_positions=protected)))
+        if args.inversions is not None:
+            # Si l'utilisateur a mis juste --inversions, on prend [2] par défaut
+            inv_sizes = args.inversions if len(args.inversions) > 0 else [2]
+            variants.extend(list(gen.generate_inversions(sizes=inv_sizes, protected_positions=protected, step=args.step)))
+        # 3. Variants - Gestion des insertions multiples
+        # 3. Variants - Gestion des insertions simultanées
+        if args.insertion is not None:
+            if not args.ins_seq:
+                print("Erreur : --insertion nécessite --ins-seq")
+                sys.exit(1)
+
+            positions = args.insertion
+            sequences = args.ins_seq
+            insert_map = []
+
+            # Cas 1 : Une seule séquence pour plusieurs positions
+            if len(sequences) == 1:
+                insert_map = [(pos - 1, sequences[0]) for pos in positions]
+            
+            # Cas 2 : Autant de séquences que de positions
+            elif len(sequences) == len(positions):
+                insert_map = [(p - 1, s) for p, s in zip(positions, sequences)]
+            
+            # Cas 3 : Déséquilibre
+            else:
+                print(f"Erreur : Déséquilibre ({len(positions)} pos vs {len(sequences)} seq)")
+                sys.exit(1)
+
+            try:
+                # On génère UN SEUL variant avec toutes les modifs
+                new_variant = gen.generate_multiple_insertions(insert_map)
+                variants.append(new_variant)
+            except Exception as e:
+                print(f"Erreur lors des insertions multiples : {e}")
 
         # 4. Traduction Exclusive
         def get_safe_name(v):
@@ -310,6 +397,13 @@ class DNASequence:
         seq = list(self.sequence)
         seq[pos] = new_base
         return DNASequence("".join(seq), self.name)
+    
+    # --- Sequence insertion ---
+    def insert(self, pos: int, insert_seq: str):
+        # On s'assure que la séquence insérée est valide
+        temp_seq = DNASequence(insert_seq) 
+        new_full_seq = self.sequence[:pos] + temp_seq.sequence + self.sequence[pos:]
+        return DNASequence(new_full_seq, self.name)
 
     # --- Trimming ---
     def trim_5prime(self, n: int):

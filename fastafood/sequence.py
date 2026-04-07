@@ -114,3 +114,16 @@ class DNASequence:
                 
             results.append("".join(protein))
         return results
+    
+    # Dans DNASequence (sequence.py)
+    def replace_range(self, start: int, end: int, replacement: str = ""):
+        """
+        Remplace les bases de l'index 'start' à 'end' (exclu) par 'replacement'.
+        Si replacement est vide, cela effectue une délétion.
+        """
+        # Validation de la nouvelle séquence si elle n'est pas vide
+        if replacement:
+            DNASequence(replacement) 
+            
+        new_seq = self.sequence[:start] + replacement.upper() + self.sequence[end:]
+        return DNASequence(new_seq, self.name)

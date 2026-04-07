@@ -98,3 +98,29 @@ class VariantGenerator:
                 new_seq = seq[:i] + inverted_fragment + seq[i+size:] 
                 
                 yield DNASequence(new_seq, name=f"{self.dna.name}_inv_{i}_{size}")
+
+        # Dans VariantGenerator (generator.py)
+    def generate_targeted_snp(self, start: int, end: int, replacement: str) -> DNASequence:
+        return self.dna.replace_range(start, end, replacement)
+
+    def generate_targeted_deletion(self, start: int, end: int) -> DNASequence:
+        return self.dna.replace_range(start, end, "")
+
+    # Dans VariantGenerator (generator.py)
+    def generate_targeted_duplication(self, start: int, end: int, target: int = None, reversed_frag: bool = False) -> DNASequence:
+        """
+        start, end, target sont des index 0-based.
+        Si target est None, la duplication est insérée juste après 'end'.
+        """
+        # Extraction du fragment [cite: 11, 17]
+        fragment_str = self.dna.sequence[start:end]
+        
+        # Inversion si demandée 
+        if reversed_frag:
+            fragment_str = fragment_str[::-1]
+        
+        # Détermination du point d'insertion
+        ins_pos = target if target is not None else end
+        
+        # Insertion et retour d'une nouvelle DNASequence 
+        return self.dna.insert(ins_pos, fragment_str)

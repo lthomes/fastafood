@@ -47,6 +47,12 @@ def main():
                      help="Position(s) d'insertion (1-based)")
     mut.add_argument("--ins-seq", nargs="+", type=str, metavar="SEQ", 
                      help="Séquence(s) ADN à insérer")
+    mut.add_argument("--snps-target", nargs="+", help="Cible : 'POS BASE' ou 'START END SEQ' (1-based)")
+    mut.add_argument("--deletions-target", nargs=2, type=int, metavar=('START', 'END'), help="Supprime de START à END (1-based)")
+    mut.add_argument("--duplications-target", nargs="+", type=int, 
+                 help="Cible : 'START END' ou 'START END TARGET' (1-based)")
+    mut.add_argument("--reversed", choices=["yes", "no"], default="no",
+                    help="Inverse la séquence dupliquée avant insertion (défaut: no)")
 
     args = parser.parse_args()
 
@@ -119,6 +125,67 @@ def main():
                 variants.append(new_variant)
             except Exception as e:
                 print(f"Erreur lors des insertions multiples : {e}")
+
+        # --- Nouveau : Gestion des cibles spécifiques ---
+
+        # SNP ou Remplacement de zone
+        if args.snps_target:
+            try:
+                if len(args.snps_target) == 2:
+                    # Format: POS BASE (ex: 6 T)
+                    pos = int(args.snps_target[0]) - 1
+                    base = args.snps_target[1]
+                    variants.append(gen.generate_targeted_snp(pos, pos + 1, base))
+                elif len(args.snps_target) == 3:
+                    # Format: START END SEQ (ex: 6 10 TTATT)
+                    start = int(args.snps_target[0]) - 1
+                    end = int(args.snps_target[1])
+                    seq_replacement = args.snps_target[2]
+                    variants.append(gen.generate_targeted_snp(start, end, seq_replacement))
+                else:
+                    print("Erreur : --snps-target attend 2 ou 3 arguments.")
+            except Exception as e:
+                print(f"Erreur --snps-target : {e}")
+
+        # Délétion ciblée
+        if args.deletions_target:
+            try:
+                start = args.deletions_target[0] - 1
+                end = args.deletions_target[1]
+                variants.append(gen.generate_targeted_deletion(start, end))
+            except Exception as e:
+                print(f"Erreur --deletions-target : {e}")
+
+        # --- Nouveau : Duplication ciblée avec option Reverse ---
+        if args.duplications_target:
+            try:
+                # Conversion du flag reversed en booléen
+                is_reversed = (args.reversed == "yes")
+                
+                # Récupération des index (conversion 1-based vers 0-based)
+                start = args.duplications_target[0] - 1
+                end = args.duplications_target[1] # Fin de slice (exclue)
+                
+                target_pos = None
+                if len(args.duplications_target) == 3:
+                    target_pos = args.duplications_target[2] - 1
+                    
+                # Génération du variant [cite: 25]
+                new_variant = gen.generate_targeted_duplication(
+                    start=start, 
+                    end=end, 
+                    target=target_pos, 
+                    reversed_frag=is_reversed
+                )
+                
+                # Ajout du suffixe au nom pour la clarté
+                suffix = "_rev_dup" if is_reversed else "_dup"
+                new_variant.name = f"{seq.name}{suffix}"
+                
+                variants.append(new_variant)
+                
+            except Exception as e:
+                print(f"Erreur --duplications-target : {e}")
 
         # 4. Traduction Exclusive
         def get_safe_name(v):
