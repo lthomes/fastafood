@@ -297,7 +297,7 @@ def fast_a_food_splash():
       {DNA}|   '  ''  '  ''  '  ''  |{RESET}
     {BUN}!____________________________!{RESET}
     {BUN}'----------------------------'{RESET}
-        {BOLD}--- fastafood v0.1.0 ---{RESET}
+        {BOLD}--- fastafood v0.2.0 ---{RESET}
     """)
 
 if __name__ == "__main__":
