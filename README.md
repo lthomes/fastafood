@@ -37,7 +37,7 @@ Reverse Complement : `--revcomp`
 
 Trimming : `--trim 5 10` (supprime 5 bases en 5' et 10 bases en 3')
 
-Traduction Protéique : `--translate` ou `--scan-translate` (6 cadres).
+Traduction Protéique : `--translate` ou `--scan-translate` (3 cadres).
 
 Gestion du Stop : `--stop yes` (tronque au premier \*).
 
@@ -75,7 +75,9 @@ Duplication simple : `--duplications-target 2 5` (duplique la zone 2-5 juste apr
 
 Duplication distante : `--duplications-target 2 5 12` (duplique 2-5 et l'insère à la position 12)
 
-Options avancées : - `--reversed yes` : inverse le fragment avant insertion.
+Options avancées :
+
+- `--reversed yes` : inverse le fragment avant insertion.
 
 - `--times 3` : insère le fragment en 3 exemplaires.
 
@@ -87,7 +89,9 @@ Ponctuel : `--protect 4 8 15` (protège les bases spécifiées)
 
 Plages : `--protect-range 10 20 50 60` (protège de 10 à 20 et de 50 à 60)
 
-Extrémités : - `--protect-extremity 15` (protège les 15 premières bases)
+Extrémités
+
+- `--protect-extremity 15` (protège les 15 premières bases)
 
 - `--protect-extremity 10 80` (protège les 10 premières bases ET de la base 80 jusqu'à la fin)
 
@@ -95,7 +99,7 @@ Extrémités : - `--protect-extremity 15` (protège les 15 premières bases)
 
 Sortie fichier : `--out results.fasta`
 
-Formatage : `--format split` (découpage à 60 car.) ou one-line (par défaut).
+Formatage : `--format split` (découpage à 60 car.) ou `one-line` (par défaut).
 
 ## Utilisation comme Bibliothèque
 
