@@ -2,7 +2,7 @@
 from typing import List
 
 class DNASequence:
-    VALID_BASES = {"A", "T", "C", "G"}
+    VALID_BASES = {"A", "T", "C", "G", "N"}
 
     COMPLEMENT = str.maketrans("ATCG", "TAGC")
 
